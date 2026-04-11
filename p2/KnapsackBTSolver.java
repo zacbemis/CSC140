@@ -1,26 +1,37 @@
 // Backtracking solver
 public class KnapsackBTSolver extends KnapsackBFSolver {
+	private int cap;
+	private int nItems;
+	private int bestValue;
 
-	private void FindSolns(int itemNum, int curWeight) {
-		int itemCnt = inst.GetItemCnt();
-
-		if (itemNum == itemCnt + 1) {
-			CheckCrntSoln();
+	private void FindSol(int itemNum, int curWeight, int curValue) {
+		if (itemNum == nItems + 1) {
+			if (bestValue == DefineConstants.INVALID_VALUE || curValue > bestValue) {
+				bestValue = curValue;
+				bestSoln.Copy(crntSoln);
+			}
 			return;
 		}
+
 		crntSoln.DontTakeItem(itemNum);
-		FindSolns(itemNum + 1, curWeight);
+		FindSol(itemNum + 1, curWeight, curValue);
+
 		int w = inst.GetItemWeight(itemNum);
-		if (curWeight + w <= inst.GetCapacity()) {
+		if (curWeight + w <= cap) {
 			crntSoln.TakeItem(itemNum);
-			FindSolns(itemNum + 1, curWeight + w);
+			FindSol(itemNum + 1, curWeight + w, curValue + inst.GetItemValue(itemNum));
 		}
 	}
 
+	@Override
 	public void Solve(KnapsackInstance inst_, KnapsackSolution soln_) {
 		inst = inst_;
 		bestSoln = soln_;
 		crntSoln = new KnapsackSolution(inst);
-		FindSolns(1, 0);
+		nItems = inst.GetItemCnt();
+		cap = inst.GetCapacity();a
+		bestValue = DefineConstants.INVALID_VALUE;
+		FindSol(1, 0, 0);
+		bestSoln.ComputeValue();
 	}
 }

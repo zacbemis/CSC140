@@ -1,74 +1,48 @@
 import java.util.Arrays;
-import java.util.Comparator;
 
 // Branch-and-Bound solver
 public class KnapsackBBSolver extends KnapsackBFSolver {
 	protected UPPER_BOUND ub;
+
 	private int totalAllValues;
 	private int[] orderByRatio;
-	private UpperBoundFn upperBound;
+	/** Cached for this Solve() — avoids repeated GetCapacity / GetItemCnt in hot paths. */
+	private int cap;
+	private int nItems;
+	private int bestValue;
 
-	@FunctionalInterface
-	private interface UpperBoundFn {
-		double apply(int itemNum, int curWeight, int curValue, int sumRefusedValues);
-	}
-
-	private void preprocessFor(UPPER_BOUND kind) {
-		if (kind == UPPER_BOUND.UB1) {
-			computeTotalValueSum();
-		} else if (kind == UPPER_BOUND.UB3) {
-			buildRatioOrder();
-		}
-	}
-
-	private void computeTotalValueSum() {
-		int n = inst.GetItemCnt();
-		totalAllValues = 0;
-		for (int i = 1; i <= n; i++) {
-			totalAllValues += inst.GetItemValue(i);
-		}
-	}
-
-	private void buildRatioOrder() {
-		int n = inst.GetItemCnt();
-		Integer[] ord = new Integer[n];
-		for (int i = 0; i < n; i++) {
-			ord[i] = i + 1;
-		}
-		Arrays.sort(ord, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
+	private void prepare() {
+		if (ub == UPPER_BOUND.UB1) {
+			totalAllValues = 0;
+			for (int i = 1; i <= nItems; i++) {
+				totalAllValues += inst.GetItemValue(i);
+			}
+		} else if (ub == UPPER_BOUND.UB2) {
+			orderByRatio = null;
+		} else {
+			int n = nItems;
+			Integer[] ord = new Integer[n];
+			for (int i = 0; i < n; i++) {
+				ord[i] = i + 1;
+			}
+			Arrays.sort(ord, (a, b) -> {
 				long va = inst.GetItemValue(a);
 				long wa = inst.GetItemWeight(a);
 				long vb = inst.GetItemValue(b);
 				long wb = inst.GetItemWeight(b);
 				return Long.compare(vb * wa, va * wb);
+			});
+			orderByRatio = new int[n];
+			for (int i = 0; i < n; i++) {
+				orderByRatio[i] = ord[i];
 			}
-		});
-		orderByRatio = new int[n];
-		for (int i = 0; i < n; i++) {
-			orderByRatio[i] = ord[i];
 		}
-	}
-
-	private void bindUpperBound(UPPER_BOUND kind) {
-		if (kind == UPPER_BOUND.UB1) {
-			upperBound = (itemNum, curWeight, curValue, sumRefusedValues) -> ub1(sumRefusedValues);
-		} else if (kind == UPPER_BOUND.UB2) {
-			upperBound = (itemNum, curWeight, curValue, sumRefusedValues) -> ub2(itemNum, curWeight, curValue);
-		} else {
-			upperBound = (itemNum, curWeight, curValue, sumRefusedValues) -> ub3(itemNum, curWeight, curValue);
-		}
-	}
-
-	private int ub1(int sumRefusedValues) {
-		return totalAllValues - sumRefusedValues;
 	}
 
 	private int ub2(int itemNum, int curWeight, int curValue) {
-		int rem = inst.GetCapacity() - curWeight;
+		int rem = cap - curWeight;
 		int b = curValue;
-		for (int j = itemNum; j <= inst.GetItemCnt(); j++) {
+		for (int j = itemNum; j <= nItems; j++) {
 			if (inst.GetItemWeight(j) <= rem) {
 				b += inst.GetItemValue(j);
 			}
@@ -77,7 +51,7 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 	}
 
 	private double ub3(int itemNum, int curWeight, int curValue) {
-		int rem = inst.GetCapacity() - curWeight;
+		int rem = cap - curWeight;
 		double add = 0;
 		int capLeft = rem;
 		for (int k = 0; k < orderByRatio.length; k++) {
@@ -99,32 +73,38 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 	}
 
 	private boolean shouldPrune(int itemNum, int curWeight, int curValue, int sumRefusedValues) {
-		int bestVal = bestSoln.GetValue();
-		if (bestVal == DefineConstants.INVALID_VALUE) {
+		if (bestValue == DefineConstants.INVALID_VALUE) {
 			return false;
 		}
-		return upperBound.apply(itemNum, curWeight, curValue, sumRefusedValues) <= bestVal;
+		if (ub == UPPER_BOUND.UB1) {
+			return totalAllValues - sumRefusedValues <= bestValue;
+		}
+		if (ub == UPPER_BOUND.UB2) {
+			return ub2(itemNum, curWeight, curValue) <= bestValue;
+		}
+		return ub3(itemNum, curWeight, curValue) <= bestValue;
 	}
 
-	private void FindSolns(int itemNum, int curWeight, int curValue, int sumRefusedValues) {
-		int itemCnt = inst.GetItemCnt();
-
-		if (itemNum == itemCnt + 1) {
-			CheckCrntSoln();
+	private void FindSol(int itemNum, int curWeight, int curValue, int sumRefusedValues) {
+		if (itemNum == nItems + 1) {
+			if (bestValue == DefineConstants.INVALID_VALUE || curValue > bestValue) {
+				bestValue = curValue;
+				bestSoln.Copy(crntSoln);
+			}
 			return;
 		}
-
 		if (shouldPrune(itemNum, curWeight, curValue, sumRefusedValues)) {
 			return;
 		}
 
+		int v = inst.GetItemValue(itemNum);
 		crntSoln.DontTakeItem(itemNum);
-		FindSolns(itemNum + 1, curWeight, curValue, sumRefusedValues + inst.GetItemValue(itemNum));
+		FindSol(itemNum + 1, curWeight, curValue, sumRefusedValues + v);
 
 		int w = inst.GetItemWeight(itemNum);
-		if (curWeight + w <= inst.GetCapacity()) {
+		if (curWeight + w <= cap) {
 			crntSoln.TakeItem(itemNum);
-			FindSolns(itemNum + 1, curWeight + w, curValue + inst.GetItemValue(itemNum), sumRefusedValues);
+			FindSol(itemNum + 1, curWeight + w, curValue + v, sumRefusedValues);
 		}
 	}
 
@@ -135,8 +115,8 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 
 	@Override
 	public void close() {
-		super.close();
 		orderByRatio = null;
+		super.close();
 	}
 
 	@Override
@@ -144,8 +124,11 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		inst = inst_;
 		bestSoln = soln_;
 		crntSoln = new KnapsackSolution(inst);
-		preprocessFor(ub);
-		bindUpperBound(ub);
-		FindSolns(1, 0, 0, 0);
+		nItems = inst.GetItemCnt();
+		cap = inst.GetCapacity();
+		bestValue = DefineConstants.INVALID_VALUE;
+		prepare();
+		FindSol(1, 0, 0, 0);
+		bestSoln.ComputeValue();
 	}
 }
