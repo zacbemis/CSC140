@@ -29,7 +29,7 @@ public class KnapsackBTSolver extends KnapsackBFSolver {
 		bestSoln = soln_;
 		crntSoln = new KnapsackSolution(inst);
 		nItems = inst.GetItemCnt();
-		cap = inst.GetCapacity();a
+		cap = inst.GetCapacity();
 		bestValue = DefineConstants.INVALID_VALUE;
 		FindSol(1, 0, 0);
 		bestSoln.ComputeValue();
