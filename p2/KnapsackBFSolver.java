@@ -1,4 +1,3 @@
-import java.util.*;
 
 // Brute-force solver
 public class KnapsackBFSolver implements java.io.Closeable {

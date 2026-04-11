@@ -1,4 +1,3 @@
-import java.util.*;
 
 public class KnapsackInstance implements java.io.Closeable
 {

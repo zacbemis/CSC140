@@ -17,14 +17,6 @@ public class KnapsackBTSolver extends KnapsackBFSolver {
 		}
 	}
 
-	public KnapsackBTSolver() {
-		super();
-	}
-
-	public void close() {
-		super.close();
-	}
-
 	public void Solve(KnapsackInstance inst_, KnapsackSolution soln_) {
 		inst = inst_;
 		bestSoln = soln_;
