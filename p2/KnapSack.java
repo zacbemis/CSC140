@@ -1,13 +1,9 @@
 
-
-
-public class KnapSack
-{
+public class KnapSack {
 	/** Set true to print each candidate solution while BF/BT search runs. */
 	public static boolean VERBOSE_SOLVER_TRACE = false;
 
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		long DPTime;
 		long BFTime;
 		long BTTime;
@@ -16,29 +12,27 @@ public class KnapSack
 		long BBTime3;
 		float speedup;
 		int itemCnt;
-		KnapsackInstance inst; //a Knapsack instance object
-		KnapsackDPSolver DPSolver = new KnapsackDPSolver(); //dynamic programming solver
-		KnapsackBFSolver BFSolver = new KnapsackBFSolver(); //brute-force solver
-		KnapsackBTSolver BTSolver = new KnapsackBTSolver(); //backtracking solver
-		KnapsackBBSolver BBSolver1 = new KnapsackBBSolver(UPPER_BOUND.UB1); //branch-and-bound solver with UB1
-		KnapsackBBSolver BBSolver2 = new KnapsackBBSolver(UPPER_BOUND.UB2); //branch-and-bound solver with UB2
-	    KnapsackBBSolver BBSolver3 = new KnapsackBBSolver(UPPER_BOUND.UB3); //branch-and-bound solver with UB3
+		KnapsackInstance inst; // a Knapsack instance object
+		KnapsackDPSolver DPSolver = new KnapsackDPSolver(); // dynamic programming solver
+		KnapsackBFSolver BFSolver = new KnapsackBFSolver(); // brute-force solver
+		KnapsackBTSolver BTSolver = new KnapsackBTSolver(); // backtracking solver
+		KnapsackBBSolver BBSolver1 = new KnapsackBBSolver(UPPER_BOUND.UB1); // branch-and-bound solver with UB1
+		KnapsackBBSolver BBSolver2 = new KnapsackBBSolver(UPPER_BOUND.UB2); // branch-and-bound solver with UB2
+		KnapsackBBSolver BBSolver3 = new KnapsackBBSolver(UPPER_BOUND.UB3); // branch-and-bound solver with UB3
 
-	    KnapsackSolution DPSoln;
+		KnapsackSolution DPSoln;
 		KnapsackSolution BFSoln;
 		KnapsackSolution BTSoln;
 		KnapsackSolution BBSoln1;
 		KnapsackSolution BBSoln2;
 		KnapsackSolution BBSoln3;
 
-		if (args.length != 1)
-		{
+		if (args.length != 1) {
 			System.out.print("Invalid Number of command-line arguments\n");
 			System.exit(1);
 		}
 		itemCnt = Integer.parseInt(args[0]);
-		if (itemCnt < 1)
-		{
+		if (itemCnt < 1) {
 			System.out.print("Invalid number of items\n");
 			System.exit(1);
 		}
@@ -54,118 +48,103 @@ public class KnapSack
 		inst.Generate();
 		inst.Print();
 
-		long  startTime = System.nanoTime();
-		DPSolver.Solve(inst,DPSoln);
-		long elapsed = System.nanoTime()-startTime;
-		DPTime =  (Long)(elapsed/1000000);
+		long startTime = System.nanoTime();
+		DPSolver.Solve(inst, DPSoln);
+		long elapsed = System.nanoTime() - startTime;
+		DPTime = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using dynamic programming (DP) in "+DPTime+"ms Optimal value = "+DPSoln.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf(
+				"\n\nSolved using dynamic programming (DP) in " + DPTime + "ms Optimal value = " + DPSoln.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			DPSoln.Print("Dynamic Programming Solution");
 		}
 
 		startTime = System.nanoTime();
-		BFSolver.Solve(inst,BFSoln);
-		elapsed = System.nanoTime()-startTime;
-		BFTime = (Long)(elapsed/1000000);
+		BFSolver.Solve(inst, BFSoln);
+		elapsed = System.nanoTime() - startTime;
+		BFTime = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using brute-force enumeration (BF) in "+BFTime+"ms Optimal value = "+ BFSoln.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf("\n\nSolved using brute-force enumeration (BF) in " + BFTime + "ms Optimal value = "
+				+ BFSoln.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			BFSoln.Print("Brute-Force Solution");
 		}
-		if (DPSoln.equalsTo(BFSoln))
-		{
+		if (DPSoln.equalsTo(BFSoln)) {
 			System.out.print("\nSUCCESS: DP and BF solutions match");
-		}
-		else
-		{
+		} else {
 			System.out.print("\nERROR: DP and BF solutions mismatch");
 		}
 
 		startTime = System.nanoTime();
-		BTSolver.Solve(inst,BTSoln);
-		elapsed = System.nanoTime()-startTime;
-		BTTime = (Long)(elapsed/1000000);
+		BTSolver.Solve(inst, BTSoln);
+		elapsed = System.nanoTime() - startTime;
+		BTTime = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using Back Tracking enumeration (Bt) in "+BTTime+"ms Optimal value = "+ BTSoln.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf("\n\nSolved using Back Tracking enumeration (Bt) in " + BTTime + "ms Optimal value = "
+				+ BTSoln.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			BTSoln.Print("Backtracking Solution");
 		}
-		if (BFSoln.equalsTo(BTSoln))
-		{
+		if (BFSoln.equalsTo(BTSoln)) {
 			System.out.print("\nSUCCESS: BF and BT solutions match");
-		}
-		else
-		{
+		} else {
 			System.out.print("\nERROR: BF and BT solutions mismatch");
 		}
-		speedup = (float)(BTTime == 0? 0 : 100.0 * (BFTime - BTTime) / (float)BFTime);
-		System.out.printf("\nSpeedup of BT relative to BF is"+speedup+"percent");
+		speedup = (float) (BTTime == 0 ? 0 : 100.0 * (BFTime - BTTime) / (float) BFTime);
+		System.out.printf("\nSpeedup of BT relative to BF is" + speedup + "percent");
 
 		startTime = System.nanoTime();
-		BBSolver1.Solve(inst,BBSoln1);
-		elapsed = System.nanoTime()-startTime;
-		BBTime1 = (Long)(elapsed/1000000);
+		BBSolver1.Solve(inst, BBSoln1);
+		elapsed = System.nanoTime() - startTime;
+		BBTime1 = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using Branch and Bound enumeration in "+BBTime1 +"ms Optimal value = "+ BBSoln1.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime1 + "ms Optimal value = "
+				+ BBSoln1.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			BBSoln1.Print("BB-UB1 Solution");
 		}
-		if (BFSoln.equalsTo(BBSoln1))
-		{
+		if (BFSoln.equalsTo(BBSoln1)) {
 			System.out.print("\nSUCCESS: BF and BB-UB1 solutions match");
-		}
-		else
-		{
+		} else {
 			System.out.print("\nERROR: BF and BB-UB1 solutions mismatch");
 		}
-		speedup = (float)(BBTime1 == 0? 0 : 100.0 * (BFTime - BBTime1) / (float)BFTime);
-		System.out.printf("\nSpeedup of BB-UB1 relative to BF is"+speedup+"percent");
+		speedup = (float) (BBTime1 == 0 ? 0 : 100.0 * (BFTime - BBTime1) / (float) BFTime);
+		System.out.printf("\nSpeedup of BB-UB1 relative to BF is" + speedup + "percent");
 		startTime = System.nanoTime();
-		BBSolver2.Solve(inst,BBSoln2);
-		elapsed = System.nanoTime()-startTime;
-		BBTime2 = (Long)(elapsed/1000000);
+		BBSolver2.Solve(inst, BBSoln2);
+		elapsed = System.nanoTime() - startTime;
+		BBTime2 = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using Branch and Bound enumeration in "+BBTime2 +"ms Optimal value = "+ BBSoln1.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime2 + "ms Optimal value = "
+				+ BBSoln1.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			BBSoln2.Print("BB-UB2 Solution");
 		}
-		if (BFSoln.equalsTo(BBSoln2))
-		{
+		if (BFSoln.equalsTo(BBSoln2)) {
 			System.out.print("\nSUCCESS: BF and BB-UB2 solutions match");
-		}
-		else
-		{
+		} else {
 			System.out.print("\nERROR: BF and BB-UB2 solutions mismatch");
 		}
-		speedup = (float)(BBTime2 == 0? 0 : 100.0 * (BFTime - BBTime2) / (float)BFTime);
-		System.out.printf("\nSpeedup of BB-UB2 relative to BF is"+speedup+"percent");
+		speedup = (float) (BBTime2 == 0 ? 0 : 100.0 * (BFTime - BBTime2) / (float) BFTime);
+		System.out.printf("\nSpeedup of BB-UB2 relative to BF is" + speedup + "percent");
 
 		startTime = System.nanoTime();
-		BBSolver3.Solve(inst,BBSoln3);
-		elapsed = System.nanoTime()-startTime;
-		BBTime3 = (Long)(elapsed/1000000);
+		BBSolver3.Solve(inst, BBSoln3);
+		elapsed = System.nanoTime() - startTime;
+		BBTime3 = (Long) (elapsed / 1000000);
 
-		System.out.printf("\n\nSolved using Branch and Bound enumeration in "+BBTime3 +"ms Optimal value = "+ BBSoln1.GetValue());
-		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT)
-		{
+		System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime3 + "ms Optimal value = "
+				+ BBSoln1.GetValue());
+		if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 			BBSoln3.Print("BB-UB3 Solution");
 		}
-		if (BFSoln.equalsTo(BBSoln3))
-		{
+		if (BFSoln.equalsTo(BBSoln3)) {
 			System.out.print("\nSUCCESS: BF and BB-UB3 solutions match");
-		}
-		else
-		{
+		} else {
 			System.out.print("\nERROR: BF and BB-UB3 solutions mismatch");
 		}
-		speedup = (float)(BBTime3 == 0? 0 : 100.0 * (BFTime - BBTime3) / (float)BFTime);
-		System.out.printf("\nSpeedup of BB-UB3 relative to BF is"+speedup+"percent");
+		speedup = (float) (BBTime3 == 0 ? 0 : 100.0 * (BFTime - BBTime3) / (float) BFTime);
+		System.out.printf("\nSpeedup of BB-UB3 relative to BF is" + speedup + "percent");
 
 		inst = null;
 		DPSoln = null;
