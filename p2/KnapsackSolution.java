@@ -25,6 +25,23 @@ public class KnapsackSolution implements java.io.Closeable
 		isTaken = null;
 	}
 
+	public void ClearForInstance(KnapsackInstance inst_)
+	{
+		int i;
+		int itemCnt = inst_.GetItemCnt();
+
+		inst = inst_;
+		if (isTaken == null || isTaken.length != itemCnt + 1)
+		{
+			isTaken = new boolean[itemCnt + 1];
+		}
+		for (i = 1; i <= itemCnt; i++)
+		{
+			isTaken[i] = false;
+		}
+		value = DefineConstants.INVALID_VALUE;
+	}
+
 	public void TakeItem(int itemNum)
 	{
 		isTaken[itemNum] = true;
@@ -32,6 +49,11 @@ public class KnapsackSolution implements java.io.Closeable
 	public void DontTakeItem(int itemNum)
 	{
 		isTaken[itemNum] = false;
+	}
+
+	public boolean IsTaken(int itemNum)
+	{
+		return isTaken[itemNum];
 	}
 	public int ComputeValue()
 	{
