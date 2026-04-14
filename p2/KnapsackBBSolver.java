@@ -3,17 +3,15 @@ import java.util.Comparator;
 
 // Branch-and-Bound solver
 public class KnapsackBBSolver extends KnapsackBFSolver {
+	private static final long MAX_SUFFIX_TABLE_CELLS = 8_000_000L;
+
 	protected UPPER_BOUND ub;
 	private int totalAllValues;
 	private int[] orderByRatio;
-	private int totalFrac;
-	private int[] fracContrib;
-	private int[] fracWeight;
-	private int[] orderIndex;
-	private int[] precomputedRefusalDeltas;
-	private int[] precomputedTakeDeltas;
 	private long[] ratioPrefixWeight;
 	private long[] ratioPrefixValue;
+	private int[][] suffixFracBound;
+	private boolean useSuffixFracTable;
 	private UpperBoundFn upperBound;
 
 	@FunctionalInterface
@@ -22,12 +20,18 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 	}
 
 	private void preprocessFor(UPPER_BOUND kind) {
+		suffixFracBound = null;
+		useSuffixFracTable = false;
 		if (kind == UPPER_BOUND.UB1) {
 			computeTotalValueSum();
 		} else if (kind == UPPER_BOUND.UB3 || kind == UPPER_BOUND.UB3_EC) {
 			buildRatioOrder();
 			if (kind == UPPER_BOUND.UB3_EC) {
-				computeTotalFrac();
+				buildRatioPrefixSums();
+				if (shouldBuildSuffixFracBoundTable()) {
+					buildSuffixFracBoundTable();
+					useSuffixFracTable = true;
+				}
 			}
 		}
 	}
@@ -62,45 +66,6 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		}
 	}
 
-	private void computeTotalFrac() {
-		int n = inst.GetItemCnt();
-		fracContrib = new int[n + 1];
-		fracWeight = new int[n + 1];
-		orderIndex = new int[n + 1];
-		precomputedRefusalDeltas = new int[n + 1];
-		precomputedTakeDeltas = new int[n + 1];
-		for (int k = 0; k < orderByRatio.length; k++) {
-			orderIndex[orderByRatio[k]] = k;
-		}
-		buildRatioPrefixSums();
-		int capLeft = inst.GetCapacity();
-		int sum = 0;
-		for (int k = 0; k < orderByRatio.length; k++) {
-			int idx = orderByRatio[k];
-			int w = inst.GetItemWeight(idx);
-			int v = inst.GetItemValue(idx);
-			if (w <= capLeft) {
-				sum += v;
-				fracContrib[idx] = v;
-				fracWeight[idx] = w;
-				capLeft -= w;
-			} else {
-				int use = capLeft;
-				sum += v * use / w;
-				fracContrib[idx] = v * use / w;
-				fracWeight[idx] = use;
-				break;
-			}
-		}
-		totalFrac = sum;
-		for (int i = 1; i <= n; i++) {
-			int k = orderIndex[i];
-			precomputedRefusalDeltas[i] = -fracContrib[i] + fillFrom(k + 1, fracWeight[i]);
-			int extraWeightNeeded = inst.GetItemWeight(i) - fracWeight[i];
-			precomputedTakeDeltas[i] = inst.GetItemValue(i) - fracContrib[i] - fillFrom(k + 1, extraWeightNeeded);
-		}
-	}
-
 	private void buildRatioPrefixSums() {
 		int n = orderByRatio.length;
 		ratioPrefixWeight = new long[n + 1];
@@ -114,7 +79,7 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 
 	private int fillFrom(int startK, int cap) {
 		int n = orderByRatio.length;
-		if (cap <= 0 || startK >= n) {
+		if (cap < 0 || startK >= n) {
 			return 0;
 		}
 		long targetWeight = ratioPrefixWeight[startK] + cap;
@@ -142,6 +107,49 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		long w = inst.GetItemWeight(idx);
 		long v = inst.GetItemValue(idx);
 		return (int) (fullValue + (v * rem / w));
+	}
+
+	private void buildSuffixFracBoundTable() {
+		int n = orderByRatio.length;
+		int cap = inst.GetCapacity();
+		suffixFracBound = new int[n + 1][cap + 1];
+		for (int level = 0; level <= n; level++) {
+			int nextK = level;
+			int usedWeight = 0;
+			int usedValue = 0;
+			for (int rem = 0; rem <= cap; rem++) {
+				while (nextK < n) {
+					int idx = orderByRatio[nextK];
+					int w = inst.GetItemWeight(idx);
+					if (usedWeight + w <= rem) {
+						usedWeight += w;
+						usedValue += inst.GetItemValue(idx);
+						nextK++;
+					} else {
+						break;
+					}
+				}
+				if (nextK == n) {
+					suffixFracBound[level][rem] = usedValue;
+				} else {
+					int idx = orderByRatio[nextK];
+					int w = inst.GetItemWeight(idx);
+					int v = inst.GetItemValue(idx);
+					int frac = (w == 0) ? v : (int) ((long) v * (rem - usedWeight) / w);
+					suffixFracBound[level][rem] = usedValue + frac;
+				}
+			}
+		}
+	}
+
+	private boolean shouldBuildSuffixFracBoundTable() {
+		long nStates = (long) orderByRatio.length + 1L;
+		long capStates = (long) inst.GetCapacity() + 1L;
+		if (nStates <= 0 || capStates <= 0) {
+			return false;
+		}
+		long cells = nStates * capStates;
+		return cells <= MAX_SUFFIX_TABLE_CELLS;
 	}
 
 	private void bindUpperBound(UPPER_BOUND kind) {
@@ -192,6 +200,7 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		}
 		return curValue + add;
 	}
+
 	private void FindSol(int itemNum, int curWeight, int curValue, int sumRefusedValues) {
 		int itemCnt = inst.GetItemCnt();
 		if (itemNum == itemCnt + 1) {
@@ -210,22 +219,57 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		}
 	}
 
-	private void FindSolUb3Ec(int itemNum, int curWeight, int currentBound) {
-		int itemCnt = inst.GetItemCnt();
-		if (itemNum == itemCnt + 1) {
+	private void initializeGreedyBestSoln() {
+		bestSoln.ClearForInstance(inst);
+		int capLeft = inst.GetCapacity();
+		for (int k = 0; k < orderByRatio.length; k++) {
+			int idx = orderByRatio[k];
+			int w = inst.GetItemWeight(idx);
+			if (w <= capLeft) {
+				bestSoln.TakeItem(idx);
+				capLeft -= w;
+			}
+		}
+		bestSoln.ComputeValue();
+	}
+
+	private void FindSolUb3EcTable(int level, int curWeight, int curValue) {
+		if (level == orderByRatio.length) {
 			CheckCrntSoln();
 			return;
 		}
-		if (currentBound <= bestSoln.GetValue()) {
+		int rem = inst.GetCapacity() - curWeight;
+		int bound = curValue + suffixFracBound[level][rem];
+		if (bound <= bestSoln.GetValue()) {
 			return;
 		}
-		crntSoln.DontTakeItem(itemNum);
-		FindSolUb3Ec(itemNum + 1, curWeight, currentBound + precomputedRefusalDeltas[itemNum]);
-		int w = inst.GetItemWeight(itemNum);
+		int idx = orderByRatio[level];
+		crntSoln.DontTakeItem(idx);
+		FindSolUb3EcTable(level + 1, curWeight, curValue);
+		int w = inst.GetItemWeight(idx);
 		if (curWeight + w <= inst.GetCapacity()) {
-			crntSoln.TakeItem(itemNum);
-			FindSolUb3Ec(itemNum + 1, curWeight + w,
-					currentBound + precomputedTakeDeltas[itemNum]);
+			crntSoln.TakeItem(idx);
+			FindSolUb3EcTable(level + 1, curWeight + w, curValue + inst.GetItemValue(idx));
+		}
+	}
+
+	private void FindSolUb3EcBinary(int level, int curWeight, int curValue) {
+		if (level == orderByRatio.length) {
+			CheckCrntSoln();
+			return;
+		}
+		int rem = inst.GetCapacity() - curWeight;
+		int bound = curValue + fillFrom(level, rem);
+		if (bound <= bestSoln.GetValue()) {
+			return;
+		}
+		int idx = orderByRatio[level];
+		crntSoln.DontTakeItem(idx);
+		FindSolUb3EcBinary(level + 1, curWeight, curValue);
+		int w = inst.GetItemWeight(idx);
+		if (curWeight + w <= inst.GetCapacity()) {
+			crntSoln.TakeItem(idx);
+			FindSolUb3EcBinary(level + 1, curWeight + w, curValue + inst.GetItemValue(idx));
 		}
 	}
 
@@ -238,13 +282,10 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 	public void close() {
 		super.close();
 		orderByRatio = null;
-		fracContrib = null;
-		fracWeight = null;
-		orderIndex = null;
-		precomputedRefusalDeltas = null;
-		precomputedTakeDeltas = null;
 		ratioPrefixWeight = null;
 		ratioPrefixValue = null;
+		suffixFracBound = null;
+		useSuffixFracTable = false;
 	}
 
 	@Override
@@ -259,7 +300,13 @@ public class KnapsackBBSolver extends KnapsackBFSolver {
 		preprocessFor(ub);
 		bindUpperBound(ub);
 		if (ub == UPPER_BOUND.UB3_EC) {
-			FindSolUb3Ec(1, 0, totalFrac);
+			initializeGreedyBestSoln();
+			crntSoln.ClearForInstance(inst);
+			if (useSuffixFracTable) {
+				FindSolUb3EcTable(0, 0, 0);
+			} else {
+				FindSolUb3EcBinary(0, 0, 0);
+			}
 		} else {
 			FindSol(1, 0, 0, 0);
 		}

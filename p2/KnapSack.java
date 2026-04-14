@@ -9,7 +9,7 @@ public class KnapSack {
 	public static boolean RUN_BT = false;
 	public static boolean RUN_BB_UB1 = false;
 	public static boolean RUN_BB_UB2 = false;
-	public static boolean RUN_BB_UB3 = true;
+	public static boolean RUN_BB_UB3 = false;
 	public static boolean RUN_BB_UB3_EC = true;
 
 	public static void main(String[] args) {
@@ -124,7 +124,7 @@ public class KnapSack {
 			long elapsed = System.nanoTime() - startTime;
 			BBTime1 = (Long) (elapsed / 1000000);
 
-			System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime1 + "ms Optimal value = "
+			System.out.printf("\n\nSolved using Branch and Bound (UB1) in " + BBTime1 + "ms Optimal value = "
 					+ BBSoln1.GetValue());
 			if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 				BBSoln1.Print("BB-UB1 Solution");
@@ -147,7 +147,7 @@ public class KnapSack {
 			long elapsed = System.nanoTime() - startTime;
 			BBTime2 = (Long) (elapsed / 1000000);
 
-			System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime2 + "ms Optimal value = "
+			System.out.printf("\n\nSolved using Branch and Bound (UB2) in " + BBTime2 + "ms Optimal value = "
 					+ BBSoln2.GetValue());
 			if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 				BBSoln2.Print("BB-UB2 Solution");
@@ -171,7 +171,7 @@ public class KnapSack {
 			long elapsed = System.nanoTime() - startTime;
 			BBTime3 = (Long) (elapsed / 1000000);
 
-			System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime3 + "ms Optimal value = "
+			System.out.printf("\n\nSolved using Branch and Bound (UB3) in " + BBTime3 + "ms Optimal value = "
 					+ BBSoln3.GetValue());
 			if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 				BBSoln3.Print("BB-UB3 Solution");
@@ -195,7 +195,7 @@ public class KnapSack {
 			long elapsed = System.nanoTime() - startTime;
 			BBTime4 = (Long) (elapsed / 1000000);
 
-			System.out.printf("\n\nSolved using Branch and Bound enumeration in " + BBTime4 + "ms Optimal value = "
+			System.out.printf("\n\nSolved using Branch and Bound (UB3_EC) in " + BBTime4 + "ms Optimal value = "
 					+ BBSoln4.GetValue());
 			if (itemCnt <= DefineConstants.MAX_SIZE_TO_PRINT) {
 				BBSoln4.Print("BB-UB3_EC Solution");
