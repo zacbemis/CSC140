@@ -5,10 +5,10 @@ public class KnapSack {
 
 	/** Set false to skip a solver and its timing / verification output. */
 	public static boolean RUN_DP = true;
-	public static boolean RUN_BF = false;
-	public static boolean RUN_BT = false;
+	public static boolean RUN_BF = true;
+	public static boolean RUN_BT = true;
 	public static boolean RUN_BB_UB1 = true;
-	public static boolean RUN_BB_UB2 = false;
+	public static boolean RUN_BB_UB2 = true;
 	public static boolean RUN_BB_UB3 = true;
 	public static boolean RUN_BB_UB3_EC = true;
 
