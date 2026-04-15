@@ -13,14 +13,14 @@ public class KnapsackBTSolver extends KnapsackBFSolver {
 			return;
 		}
 
-		crntSoln.DontTakeItem(itemNum);
-		FindSol(itemNum + 1, curWeight, curValue);
-
 		int w = inst.GetItemWeight(itemNum);
 		if (curWeight + w <= cap) {
 			crntSoln.TakeItem(itemNum);
 			FindSol(itemNum + 1, curWeight + w, curValue + inst.GetItemValue(itemNum));
+			crntSoln.DontTakeItem(itemNum);
 		}
+		crntSoln.DontTakeItem(itemNum);
+		FindSol(itemNum + 1, curWeight, curValue);
 	}
 
 	@Override

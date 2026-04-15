@@ -5,17 +5,21 @@ public class KnapsackBFSolver implements java.io.Closeable {
 	protected KnapsackSolution crntSoln;
 	protected KnapsackSolution bestSoln;
 
-	public void FindSolns(int itemNum) {
+	public void FindSolns(int itemNum, int curWeight) {
 		int itemCnt = inst.GetItemCnt();
 
 		if (itemNum == itemCnt + 1) {
 			CheckCrntSoln();
 			return;
 		}
+		int w = inst.GetItemWeight(itemNum);
+		if (curWeight + w <= inst.GetCapacity()) {
+			crntSoln.TakeItem(itemNum);
+			FindSolns(itemNum + 1, curWeight + w);
+			crntSoln.DontTakeItem(itemNum);
+		}
 		crntSoln.DontTakeItem(itemNum);
-		FindSolns(itemNum + 1);
-		crntSoln.TakeItem(itemNum);
-		FindSolns(itemNum + 1);
+		FindSolns(itemNum + 1, curWeight);
 	}
 
 	public int getTotalWeight(KnapsackInstance inst) {
@@ -61,6 +65,6 @@ public class KnapsackBFSolver implements java.io.Closeable {
 		inst = inst_;
 		bestSoln = soln_;
 		crntSoln = new KnapsackSolution(inst);
-		FindSolns(1);
+		FindSolns(1, 0);
 	}
 }
